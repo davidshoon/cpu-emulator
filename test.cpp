@@ -25,6 +25,9 @@ enum {
 	OP_CMPJMPLT,
 	OP_CMPJMPLTE,
 
+	OP_CALL,
+	OP_RET,
+
 	OP_NOP,
 	OP_HLT,
 
@@ -202,6 +205,19 @@ inline void op_cmpjmplte(Cpu &cpu)
 	}
 }
 
+inline void op_call(Cpu &cpu)
+{
+	int32_t newpc = silent_pop(cpu);
+	cpu.stack.push_back(cpu.pc + 1);
+	cpu.pc = newpc;
+}
+
+inline void op_ret(Cpu &cpu)
+{
+	int32_t newpc = silent_pop(cpu);
+	cpu.pc = newpc;
+}
+
 inline void op_nop(Cpu &cpu)
 {
 	cpu.pc++;
@@ -283,6 +299,16 @@ void opcode_parse(Cpu &cpu)
 			op_cmpjmplte(cpu);
 			break;
 
+		case OP_CALL:
+			printf("CALL\n");
+			op_call(cpu);
+			break;
+
+		case OP_RET:
+			printf("RET\n");
+			op_ret(cpu);
+			break;
+
 		case OP_NOP:
 			printf("NOP\n");
 			op_nop(cpu);
@@ -304,12 +330,24 @@ int main()
 	Cpu cpu(1024*1024);
 
 	cpu.code.push_back(OP_PUSH);
+	cpu.code.push_back(6);
+	cpu.code.push_back(OP_CALL);
+
+	cpu.code.push_back(OP_PUSH);
+	cpu.code.push_back(13);
+	cpu.code.push_back(OP_JMP);
+
+	cpu.code.push_back(OP_PUSH);
 	cpu.code.push_back(0x01);
 	cpu.code.push_back(OP_PUSH);
 	cpu.code.push_back(0x02);
 
 	cpu.code.push_back(OP_ADD);
 	cpu.code.push_back(OP_POP);
+
+	cpu.code.push_back(OP_RET);
+
+	cpu.code.push_back(OP_NOP);
 
 	cpu.code.push_back(OP_PUSH);
 	cpu.code.push_back(0x01);
