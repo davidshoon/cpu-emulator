@@ -6,6 +6,13 @@
 #include <vector>
 #include <stack>
 
+// Should we print debug messages?
+//#define PRINT(...) printf(__VA_ARGS__)
+#define PRINT(...)
+
+// Use "FastVector" -- which is faster than STL vector.
+#define USE_FASTVECTOR
+
 enum {
 	OP_NULL = 0,
 
@@ -36,16 +43,68 @@ enum {
 
 const int OPCODESIZE = sizeof(int32_t);
 
+#ifdef USE_FASTVECTOR
+
+template <class T>
+class MyFastVector
+{
+public:
+	void setSize(int size) {
+		vec = new T[size];
+		last_index = 0;
+	}
+
+	T &operator[](int index) {
+		return vec[index];
+	}
+
+	void push_back(T data) {
+		vec[last_index++] = data;
+	}
+
+	void pop_back() {
+		last_index--;
+	}
+
+	T &back() {
+		return vec[last_index-1];
+	}
+
+	long int end() {
+		return last_index;
+	}
+
+	long int begin() {
+		return 0;
+	}
+
+private:
+	T *vec{nullptr};
+	int last_index{0};
+};
+
+#endif
+
 class Cpu
 {
 public:
 	Cpu(int size_of_heap) : pc(0) {
 		heap.resize(size_of_heap);
+
+#ifdef USE_FASTVECTOR
+		code.setSize(size_of_heap);
+		stack.setSize(size_of_heap);
+#endif
 	}
 
 	// This cpu has separate code, stack, heap memory areas.
+#ifndef USE_FASTVECTOR
 	std::vector <int32_t> code;
 	std::vector <int32_t> stack;
+#else
+	MyFastVector <int32_t> code;
+	MyFastVector <int32_t> stack;
+#endif
 	std::vector <int8_t> heap;
 
 	int pc; // program counter / instruction pointer.
@@ -108,7 +167,7 @@ inline void op_div(Cpu &cpu)
 	int32_t x = silent_pop(cpu);
 
 	if (y == 0) {
-		printf("ERROR: Divide by zero!\n");
+		PRINT("ERROR: Divide by zero!\n");
 		cpu.pc++;
 		return;
 	}
@@ -230,97 +289,97 @@ inline void op_hlt(Cpu &cpu)
 
 void opcode_parse(Cpu &cpu)
 {
-	printf("CPU: pc = %d, sp = %ld\n", cpu.pc, cpu.stack.end() - cpu.stack.begin());
+	PRINT("CPU: pc = %d, sp = %ld\n", cpu.pc, cpu.stack.end() - cpu.stack.begin());
 
 	switch (cpu.code[cpu.pc]) {
 		case OP_PUSH:
-			printf("PUSH\n");
+			PRINT("PUSH\n");
 			op_push(cpu);
 			break;
 
 		case OP_POP: {
 			int32_t x = op_pop(cpu);
-			printf("POP: %d\n", x);
+			PRINT("POP: %d\n", x);
 			break;
 		}
 
 		case OP_ADD:
-			printf("ADD\n");
+			PRINT("ADD\n");
 			op_add(cpu);
 			break;
 
 		case OP_SUB:
-			printf("SUB\n");
+			PRINT("SUB\n");
 			op_sub(cpu);
 			break;
 
 		case OP_MULT:
-			printf("MUL\n");
+			PRINT("MUL\n");
 			op_mul(cpu);
 			break;
 
 		case OP_DIV:
-			printf("DIV\n");
+			PRINT("DIV\n");
 			op_div(cpu);
 			break;
 
 		case OP_MOD:
-			printf("MOD\n");
+			PRINT("MOD\n");
 			op_mod(cpu);
 			break;
 
 		case OP_JMP:
-			printf("JMP\n");
+			PRINT("JMP\n");
 			op_jmp(cpu);
 			break;
 
 		case OP_CMPJMPE:
-			printf("CMPJMPE\n");
+			PRINT("CMPJMPE\n");
 			op_cmpjmpe(cpu);
 			break;
 
 		case OP_CMPJMPGT:
-			printf("CMPJMPGT\n");
+			PRINT("CMPJMPGT\n");
 			op_cmpjmpgt(cpu);
 			break;
 
 		case OP_CMPJMPGTE:
-			printf("CMPJMPGTE\n");
+			PRINT("CMPJMPGTE\n");
 			op_cmpjmpgte(cpu);
 			break;
 
 		case OP_CMPJMPLT:
-			printf("CMPJMPLT\n");
+			PRINT("CMPJMPLT\n");
 			op_cmpjmplt(cpu);
 			break;
 
 		case OP_CMPJMPLTE:
-			printf("CMPJMPLTE\n");
+			PRINT("CMPJMPLTE\n");
 			op_cmpjmplte(cpu);
 			break;
 
 		case OP_CALL:
-			printf("CALL\n");
+			PRINT("CALL\n");
 			op_call(cpu);
 			break;
 
 		case OP_RET:
-			printf("RET\n");
+			PRINT("RET\n");
 			op_ret(cpu);
 			break;
 
 		case OP_NOP:
-			printf("NOP\n");
+			PRINT("NOP\n");
 			op_nop(cpu);
 			break;
 
 		case OP_HLT:
-			printf("HLT\n");
+			PRINT("HLT\n");
 			op_hlt(cpu);
 			break;
 
 		default:
-			printf("ERROR: Opcode invalid: %d\n", cpu.code[cpu.pc]);
+			PRINT("ERROR: Opcode invalid: %d\n", cpu.code[cpu.pc]);
 			exit(1);
 	}
 }
@@ -366,7 +425,8 @@ int main()
 
 	cpu.code.push_back(OP_HLT);
 
-	while (1)
+//	while (1)
+	for (int i = 0; i < 1000000000; i++)
 		opcode_parse(cpu);
 
 }
