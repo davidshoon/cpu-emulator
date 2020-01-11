@@ -1,3 +1,12 @@
+/*
+
+	C++ cpu-emulator.
+
+	Currently incomplete, but does some fantastic speed runs.
+
+	by David Shoon
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
